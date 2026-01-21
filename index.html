@@ -1,9 +1,10 @@
-<html lang="en">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <title>Chúc Mừng Năm Mới</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="description" content="Countdown chào năm mới với hiệu ứng pháo hoa.">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
@@ -16,11 +17,12 @@
     <meta name="msapplication-TileColor" content="#000000">
     <meta name="msapplication-TileImage"
         content="https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/firework-burst-icon-v2.png">
-    <link href="https://fonts.googleapis.com/css?family=Russo+One" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
     <link rel="stylesheet" href="./style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Meow+Script&display=swap" rel="stylesheet">
     <!-- bootstrap -->
 </head>
@@ -66,21 +68,25 @@
                 <canvas id="trails-canvas"></canvas>
                 <canvas id="main-canvas"></canvas>
             </div>
-            <div class="controls">
-                <div class="btn pause-btn">
-                    <svg fill="white" width="24" height="24">
-                        <use href="#icon-pause" xlink:href="#icon-pause"></use>
-                    </svg>
+            <div class="controls hide">
+                <div class="controls__group">
+                    <div class="btn pause-btn" role="button" tabindex="0" aria-label="Tạm dừng" title="Tạm dừng (phím P)">
+                        <svg fill="white" width="24" height="24">
+                            <use href="#icon-pause" xlink:href="#icon-pause"></use>
+                        </svg>
+                    </div>
+                    <div class="btn sound-btn" role="button" tabindex="0" aria-label="Âm thanh" title="Âm thanh">
+                        <svg fill="white" width="24" height="24">
+                            <use href="#icon-sound-on" xlink:href="#icon-sound-on"></use>
+                        </svg>
+                    </div>
                 </div>
-                <div class="btn sound-btn">
-                    <svg fill="white" width="24" height="24">
-                        <use href="#icon-sound-off" xlink:href="#icon-sound-off"></use>
-                    </svg>
-                </div>
-                <div class="btn settings-btn">
-                    <svg fill="white" width="24" height="24">
-                        <use href="#icon-settings" xlink:href="#icon-settings"></use>
-                    </svg>
+                <div class="controls__group">
+                    <div class="btn settings-btn" role="button" tabindex="0" aria-label="Cài đặt" title="Cài đặt (phím O)">
+                        <svg fill="white" width="24" height="24">
+                            <use href="#icon-settings" xlink:href="#icon-settings"></use>
+                        </svg>
+                    </div>
                 </div>
             </div>
             <div class="menu hide">
@@ -90,78 +96,86 @@
                             <use href="#icon-close" xlink:href="#icon-close"></use>
                         </svg>
                     </div>
-                    <div class="menu__header">Settings</div>
-                    <div class="menu__subheader">For more info, click any label.</div>
+                    <div class="menu__header">Cài đặt</div>
+                    <div class="menu__subheader">Nhấn vào nhãn để xem mô tả chi tiết.</div>
                     <form>
                         <div class="form-option form-option--select">
-                            <label class="shell-type-label">Shell Type</label>
+                            <label class="shell-type-label">Loại pháo</label>
                             <select class="shell-type"></select>
                         </div>
                         <div class="form-option form-option--select">
-                            <label class="shell-size-label">Shell Size</label>
+                            <label class="shell-size-label">Cỡ pháo</label>
                             <select class="shell-size"></select>
                         </div>
                         <div class="form-option form-option--select">
-                            <label class="quality-ui-label">Quality</label>
+                            <label class="quality-ui-label">Chất lượng</label>
                             <select class="quality-ui"></select>
                         </div>
                         <div class="form-option form-option--select">
-                            <label class="sky-lighting-label">Sky Lighting</label>
+                            <label class="sky-lighting-label">Ánh sáng nền</label>
                             <select class="sky-lighting"></select>
                         </div>
                         <div class="form-option form-option--select">
-                            <label class="scaleFactor-label">Scale</label>
+                            <label class="scaleFactor-label">Tỉ lệ</label>
                             <select class="scaleFactor"></select>
                         </div>
                         <div class="form-option form-option--checkbox">
-                            <label class="auto-launch-label">Auto Fire</label>
+                            <label class="auto-launch-label">Tự bắn</label>
                             <input class="auto-launch" type="checkbox" />
                         </div>
                         <div class="form-option form-option--checkbox form-option--finale-mode">
-                            <label class="finale-mode-label">Finale Mode</label>
+                            <label class="finale-mode-label">Chế độ cao trào</label>
                             <input class="finale-mode" type="checkbox" />
                         </div>
                         <div class="form-option form-option--checkbox">
-                            <label class="hide-controls-label">Hide Controls</label>
+                            <label class="hide-controls-label">Ẩn điều khiển</label>
                             <input class="hide-controls" type="checkbox" />
                         </div>
+                        <div class="form-option form-option--checkbox">
+                            <label class="lixi-rain-label">Mưa lì xì</label>
+                            <input class="lixi-rain-toggle" type="checkbox" />
+                        </div>
                         <div class="form-option form-option--checkbox form-option--fullscreen">
-                            <label class="fullscreen-label">Fullscreen</label>
+                            <label class="fullscreen-label">Toàn màn hình</label>
                             <input class="fullscreen" type="checkbox" />
                         </div>
                         <div class="form-option form-option--checkbox">
-                            <label class="long-exposure-label">Open Shutter</label>
+                            <label class="long-exposure-label">Phơi sáng</label>
                             <input class="long-exposure" type="checkbox" />
                         </div>
                     </form>
                     <div class="credits">
-                        Passionately built Sayn Achhava.
+                        Sản phẩm được lập trình bởi Dev.Hajua <br>
+                        Dựa trên bản gốc của Sayn Achhava và có sự hỗ trợ của trí tuệ nhân tạo
                     </div>
                 </div>
             </div>
         </div>
 
+        <div id="lixi-rain" class="lixi-rain hidden" aria-hidden="true"></div>
+
         <div class="help-modal">
             <div class="help-modal__overlay">
             </div>
-            <div class="help-modal__dialog"></div>
             <div class="help-modal__dialog">
                 <div class="help-modal__header"></div>
                 <div class="help-modal__body"></div>
-                <button type="button" class="help-modal__close-btn">Close</button>
+                <button type="button" class="help-modal__close-btn">Đóng</button>
             </div>
         </div>
-        <div id="countdown" class="countdown-container">
-            <div id="title">Countdown new year 2024</div>
-            <br>
-            <span id="days">00</span>
-            <p>:</p>
-            <span id="hours">00</span>
-            <p>:</p>
-            <span id="minutes">00</span>
-            <p>:</p>
-            <span id="seconds">00</span>
-            <div class="wrapper">
+        <div id="countdown" class="countdown-container countdown-docked countdown-init" aria-live="polite">
+            <div id="title" class="countdown-title">Countdown</div>
+            <div class="countdown-time" role="timer" aria-label="Đếm ngược đến Tết âm lịch">
+                <span id="days" class="countdown-num">00</span>
+                <span class="countdown-sep" aria-hidden="true">:</span>
+                <span id="hours" class="countdown-num">00</span>
+                <span class="countdown-sep" aria-hidden="true">:</span>
+                <span id="minutes" class="countdown-num">00</span>
+                <span class="countdown-sep" aria-hidden="true">:</span>
+                <span id="seconds" class="countdown-num">00</span>
+            </div>
+            <div class="countdown-hint">H: Ẩn UI • L: Mưa lì xì • A: Tự bắn pháo • F: Chế độ cao trào • O: Cài đặt</div>
+            <div class="wrapper" aria-hidden="true">
                 <div class="circle"></div>
                 <div class="circle"></div>
                 <div class="circle"></div>
@@ -170,7 +184,9 @@
                 <div class="shadow"></div>
             </div>
         </div>
-        <div id="chucMung" class="chuc-mung hidden">Chúc mừng năm mới 2024
+        <div id="chucMung" class="chuc-mung hidden">
+            <button type="button" class="panel-close" aria-label="Ẩn lời chúc" title="Ẩn (phím H)">×</button>
+            Chúc mừng năm mới <span id="chucMungYear">2026</span>
             <br>
             <a class="btn-loiChuc" href="LoiChuc/HappyNewYear/intro.html">Lời chúc</a>
             <button class="btn-liXi" onclick="LiXi()">Lì xì</button>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <radialGradient id="petal" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#fff8c9"/>
+      <stop offset="0.6" stop-color="#ffe06b"/>
+      <stop offset="1" stop-color="#f3b400"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Subtle hoa mai blossom for default cursor -->
+  <g filter="url(#shadow)" transform="translate(10 10)">
+    <g fill="url(#petal)" stroke="#f0a800" stroke-width="0.7" stroke-linejoin="round">
+      <ellipse cx="0" cy="-3" rx="3" ry="3.8"/>
+      <ellipse cx="2.7" cy="-0.9" rx="3" ry="3.8" transform="rotate(72)"/>
+      <ellipse cx="1.7" cy="2.6" rx="3" ry="3.8" transform="rotate(144)"/>
+      <ellipse cx="-1.7" cy="2.6" rx="3" ry="3.8" transform="rotate(216)"/>
+      <ellipse cx="-2.7" cy="-0.9" rx="3" ry="3.8" transform="rotate(288)"/>
+    </g>
+    <circle cx="0" cy="0" r="2" fill="#ff9f00" stroke="#d97900" stroke-width="0.7"/>
+  </g>
+
+  <!-- tiny sparkle -->
+  <path d="M24 6l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1L23 8.2 24 6z" fill="#fff3b3" opacity="0.85"/>
+</svg>

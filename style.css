@@ -1,6 +1,21 @@
 * {
-    position: relative;
     box-sizing: border-box;
+}
+
+:root {
+    --text: rgba(255, 255, 255, 0.85);
+    --muted: rgba(255, 255, 255, 0.6);
+    --panel-bg: rgba(0, 0, 0, 0.42);
+    --overlay-bg: rgba(0, 0, 0, 0.22);
+    --panel-border: rgba(255, 255, 255, 0.14);
+    --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+    --radius: 18px;
+    --accent: #2cff33;
+    --danger: #ff2d2d;
+
+    --font-sans: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    --font-display: "Fraunces", var(--font-sans);
 }
 
 html,
@@ -15,10 +30,15 @@ html {
 body {
     overflow: hidden;
     color: rgba(255, 255, 255, 0.5);
-    font-family: "Russo One", arial, sans-serif;
-    line-height: 1.25;
-    letter-spacing: 0.06em;
+    font-family: var(--font-sans);
+    line-height: 1.35;
+    letter-spacing: 0.01em;
 }
+
+canvas {
+    display: block;
+}
+
 
 .hide {
     opacity: 0;
@@ -50,11 +70,14 @@ body {
     width: 100%;
     align-self: center;
     text-align: center;
-    text-transform: uppercase;
+    text-transform: none;
 }
 
 .loading-init__header {
     font-size: 2.2em;
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.01em;
 }
 
 .loading-init__status {
@@ -64,6 +87,10 @@ body {
 }
 
 .stage-container {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
     box-sizing: initial;
     border: 1px solid #222;
@@ -78,6 +105,8 @@ body {
 }
 
 .canvas-container {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     -webkit-transition: -webkit-filter 0.3s;
@@ -88,6 +117,9 @@ body {
 
 .canvas-container canvas {
     position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     mix-blend-mode: lighten;
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
@@ -98,12 +130,19 @@ body {
     top: 0;
     width: 100%;
     padding-bottom: 50px;
+    z-index: 60;
     display: -webkit-box;
     display: flex;
     -webkit-box-pack: justify;
     justify-content: space-between;
     -webkit-transition: opacity 0.3s, visibility 0.3s;
     transition: opacity 0.3s, visibility 0.3s;
+}
+
+/* When controls are "hidden", keep them hoverable/clickable on desktop.
+   `.hide` sets visibility:hidden globally, so override here. */
+.controls.hide {
+    visibility: visible;
 }
 
 @media (min-width: 840px) {
@@ -122,6 +161,7 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
+    z-index: 100;
     background-color: rgba(0, 0, 0, 0.42);
     -webkit-transition: opacity 0.3s, visibility 0.3s;
     transition: opacity 0.3s, visibility 0.3s;
@@ -151,7 +191,10 @@ body {
     margin-bottom: 8px;
     padding-top: 16px;
     font-size: 2em;
-    text-transform: uppercase;
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: none;
 }
 
 .menu__subheader {
@@ -184,7 +227,9 @@ body {
     width: 50%;
     padding-right: 12px;
     text-align: right;
-    text-transform: uppercase;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.01em;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -196,9 +241,9 @@ body {
     width: 50%;
     height: 30px;
     font-size: 1rem;
-    font-family: "Russo One", arial, sans-serif;
+    font-family: var(--font-sans);
     color: rgba(255, 255, 255, 0.5);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.01em;
     background-color: transparent;
     border: 1px solid rgba(255, 255, 255, 0.5);
 }
@@ -229,19 +274,29 @@ body {
     right: 0;
 }
 
+.controls__group {
+    display: flex;
+    gap: 10px;
+}
+
 .btn {
-    opacity: 0.16;
-    width: 50px;
-    height: 50px;
     display: -webkit-box;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    cursor: default;
+    cursor: pointer;
     -webkit-transition: opacity 0.3s;
     transition: opacity 0.3s;
+}
+
+.btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.65);
+    outline-offset: 2px;
 }
 
 .btn--bright {
@@ -294,6 +349,7 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
+    z-index: 120;
     visibility: hidden;
     -webkit-transition-property: visibility;
     transition-property: visibility;
@@ -344,28 +400,217 @@ body {
 }
 
 .countdown-container {
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 40px;
-    color: #333;
+    transform:
+        translate(var(--countdown-tx, -50%), var(--countdown-ty, -50%))
+        scale(var(--dock-scale, 1));
+    transform-origin: center;
+
+    width: min(92vw, 720px);
+    padding: 22px 18px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--panel-border);
+    background: var(--overlay-bg);
+    box-shadow: var(--shadow);
     text-align: center;
-    width: 100%;
+    color: var(--text);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+
+    z-index: 10;
+    pointer-events: none;
+
+    transition:
+        top 650ms cubic-bezier(0.2, 0.9, 0.2, 1),
+        left 650ms cubic-bezier(0.2, 0.9, 0.2, 1),
+        transform 650ms cubic-bezier(0.2, 0.9, 0.2, 1),
+        background-color 520ms ease;
 }
 
-.countdown-container span {
-    color: white;
-    display: inline-block;
-    width: 50px;
-    margin: 0 5px;
+/* Avoid initial "jump" while JS computes dock position */
+.countdown-container.countdown-init {
+    opacity: 0;
+    transition: none !important;
 }
 
-.countdown-container p {
-    color: white;
-    display: inline-block;
-    width: 10px;
-    margin: 0 5px;
+/* Used for instant correction (e.g., after fonts load) */
+.countdown-container.countdown-no-transition {
+    transition: none !important;
+}
+
+/* Expanded mode (center) */
+.countdown-container.countdown-expanded {
+    pointer-events: auto;
+}
+
+/* Docked widget mode (corner) */
+.countdown-container.countdown-docked {
+    transform-origin: top left;
+    z-index: 20;
+    pointer-events: auto;
+    cursor: pointer;
+
+    /* Initial (pre-JS) fallback: bottom-right corner */
+    top: auto;
+    left: auto;
+    right: 12px;
+    bottom: 12px;
+    --countdown-tx: 0px;
+    --countdown-ty: 0px;
+    --dock-scale: 0.60;
+
+    width: auto;
+    padding: 10px 12px;
+}
+
+/* In docked mode, show time only */
+.countdown-container.countdown-docked .countdown-title,
+.countdown-container.countdown-docked .countdown-hint,
+.countdown-container.countdown-docked .wrapper {
+    display: none;
+}
+
+.countdown-container.countdown-docked .countdown-time {
+    gap: 6px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.countdown-container.countdown-docked .countdown-num {
+    width: clamp(40px, 9vw, 56px);
+    height: clamp(40px, 9vw, 56px);
+    font-size: clamp(20px, 4.5vw, 30px);
+    border-radius: 12px;
+}
+
+.countdown-container.countdown-docked .countdown-sep {
+    font-size: clamp(18px, 3.8vw, 26px);
+}
+
+.countdown-container.countdown-docked:hover {
+    background: rgba(0, 0, 0, 0.30);
+}
+
+.countdown-title {
+    font-size: clamp(14px, 2.6vw, 20px);
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    color: var(--muted);
+    margin-bottom: 14px;
+}
+
+.countdown-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.btn-emoji {
+    font-size: 22px;
+    line-height: 1;
+    transform: translateY(1px);
+}
+
+/* Tet-themed cursor for interactive UI */
+:root {
+    /* Default cursor (subtle) + Pointer cursor (more expressive) */
+    --cursor-tet-default: url("./assets/cursor-tet-default.svg") 16 16;
+    /* Hotspot near top-left for better click accuracy */
+    --cursor-tet-pointer: url("./assets/cursor-tet-hoa-dao.svg") 2 2;
+}
+
+body {
+    cursor: var(--cursor-tet-default), auto;
+}
+
+.btn,
+.countdown-container.countdown-docked,
+.countdown-container.countdown-expanded,
+.btn-loiChuc,
+.btn-liXi,
+.panel-close,
+.close-menu-btn,
+.help-modal__close-btn {
+    cursor: pointer;
+}
+
+.btn:hover,
+.btn:active,
+.countdown-container.countdown-docked:hover,
+.countdown-container.countdown-docked:active,
+.countdown-container.countdown-expanded:hover,
+.countdown-container.countdown-expanded:active,
+.btn-loiChuc:hover,
+.btn-loiChuc:active,
+.btn-liXi:hover,
+.btn-liXi:active,
+.panel-close:hover,
+.panel-close:active,
+.close-menu-btn:hover,
+.close-menu-btn:active,
+.help-modal__close-btn:hover,
+.help-modal__close-btn:active {
+    cursor: var(--cursor-tet-pointer), pointer;
+}
+
+.menu label,
+.menu select,
+.menu input[type="checkbox"],
+.menu input[type="range"],
+.menu input,
+.menu button,
+.menu a {
+    cursor: pointer;
+}
+
+.menu label:hover,
+.menu select:hover,
+.menu input[type="checkbox"]:hover,
+.menu input[type="range"]:hover,
+.menu input:hover,
+.menu button:hover,
+.menu a:hover {
+    cursor: var(--cursor-tet-pointer), pointer;
+}
+
+/* Hover effect for expanded countdown (so it doesn't feel "dead") */
+.countdown-container.countdown-expanded:hover {
+    background: rgba(0, 0, 0, 0.30);
+}
+
+.countdown-time {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.countdown-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(54px, 12vw, 82px);
+    height: clamp(54px, 12vw, 82px);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-size: clamp(28px, 6vw, 44px);
+    font-variant-numeric: tabular-nums;
+}
+
+.countdown-sep {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: clamp(22px, 4.2vw, 34px);
+    line-height: 1;
+    margin-top: -2px;
 }
 
 @media (min-width: 840px) {
@@ -377,7 +622,10 @@ body {
 
 .help-modal__header {
     font-size: 1.75em;
-    text-transform: uppercase;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0.01em;
     text-align: center;
 }
 
@@ -399,11 +647,12 @@ body {
     border-radius: 2px;
     padding: 0.25em 0.75em;
     margin-top: 0.36em;
-    font-family: "Russo One", arial, sans-serif;
+    font-family: var(--font-sans);
+    font-weight: 600;
     font-size: 1em;
     color: rgba(255, 255, 255, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    text-transform: none;
+    letter-spacing: 0.01em;
     background-color: rgba(255, 255, 255, 0.25);
     -webkit-transition: color 0.3s, background-color 0.3s;
     transition: color 0.3s, background-color 0.3s;
@@ -447,16 +696,86 @@ body {
     font-family: "Meow Script", cursive;
     font-weight: 400;
     font-style: normal;
-    font-size: 40px;
+    font-size: clamp(36px, 6vw, 64px);
     color: #fbfbfb;
     text-align: center;
-    padding: 20px;
+    padding: 22px 18px;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     opacity: 1;
     transition: opacity 3s ease-in-out;
 
+    width: min(92vw, 720px);
+    border-radius: var(--radius);
+    border: 1px solid var(--panel-border);
+    background: var(--overlay-bg);
+    box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+
+    line-height: 1.05;
+    text-shadow: 0 10px 26px rgba(0, 0, 0, 0.75);
+
+}
+
+.panel-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 34px;
+}
+
+.panel-close:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+
+body.hud-hidden .countdown-container,
+body.hud-hidden .chuc-mung,
+body.hud-hidden .controls {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+body.menu-open .countdown-container {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Lì xì rain overlay */
+.lixi-rain {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.lixi-item {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    will-change: transform;
+    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lixi-rain {
+        display: none !important;
+    }
 }
 
 @keyframes fadeIn {
@@ -514,9 +833,9 @@ body {
     font-family: "Meow Script",
         cursive;
     margin: 10px;
-    font-size: 21px;
-    color: #171717;
-    background-color: #2cff33;
+    font-size: clamp(20px, 4.2vw, 28px);
+    color: #111;
+    background-color: var(--accent);
     border: none;
     border-radius: 8px;
     padding: 12px 24px;
@@ -529,9 +848,9 @@ body {
     font-family: "Meow Script",
         cursive;
     margin: 10px;
-    font-size: 21px;
+    font-size: clamp(20px, 4.2vw, 28px);
     color: #ffffff;
-    background-color: #ff0606;
+    background-color: var(--danger);
     border: none;
     border-radius: 8px;
     padding: 12px 24px;
@@ -540,23 +859,38 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-
-.btn-liXi .btn-loiChuc:hover {
-    background-color: #45a049;
+.btn-loiChuc:hover {
+    background-color: #36ff3e;
 }
 
-.btn-liXi .btn-loiChuc:active {
-    background-color: #39833d;
+.btn-loiChuc:active {
+    background-color: #26db2d;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-liXi:hover {
+    background-color: #ff3a3a;
+}
+
+.btn-liXi:active {
+    background-color: #e11f1f;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-loiChuc:focus-visible,
+.btn-liXi:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.65);
+    outline-offset: 3px;
 }
 
 /* loader */
 .wrapper {
-    margin: 10 auto;
+    margin: 16px auto 0;
     width: 200px;
     height: 60px;
     position: relative;
     z-index: 1;
+    opacity: 0.8;
 }
 
 .circle {
@@ -702,7 +1036,7 @@ body {
     transform: rotatey(-80deg);
 }
 
-p {
+.book p {
     font-size: 20px;
     font-weight: bolder;
 }

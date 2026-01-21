@@ -126,7 +126,7 @@ const store = {
       finale: false,
       skyLighting: SKY_LIGHT_NORMAL + "",
       //hideControls: IS_HEADER,
-      hideControls: true,
+      hideControls: false,
       longExposure: false,
       scaleFactor: getDefaultScaleFactor(),
     },
@@ -208,6 +208,7 @@ const store = {
 
 if (!IS_HEADER) {
   store.load();
+  applyPresentationDefaults();
 }
 
 // Actions
@@ -235,6 +236,27 @@ function toggleSound(toggle) {
   }
 }
 
+function ensureAudioUnlocked() {
+  if (!store.state.soundEnabled) return;
+  if (!soundManager || !soundManager.ctx) return;
+  if (soundManager.ctx.state === "running") return;
+
+  // Must run inside a real user interaction to work reliably.
+  try {
+    soundManager.unlock();
+  } catch (e) {
+    // ignore
+  }
+}
+
+function handleSoundToggle() {
+  const willEnable = !store.state.soundEnabled;
+  toggleSound();
+  if (willEnable) {
+    ensureAudioUnlocked();
+  }
+}
+
 function toggleMenu(toggle) {
   if (typeof toggle === "boolean") {
     store.setState({ menuOpen: toggle });
@@ -245,9 +267,12 @@ function toggleMenu(toggle) {
 
 function updateConfig(nextConfig) {
   nextConfig = nextConfig || getConfigFromDOM();
-  store.setState({
-    config: Object.assign({}, store.state.config, nextConfig),
-  });
+  const mergedConfig = Object.assign({}, store.state.config, nextConfig);
+  // Finale mode implies Auto Fire.
+  if (mergedConfig.finale && !mergedConfig.autoLaunch) {
+    mergedConfig.autoLaunch = true;
+  }
+  store.setState({ config: mergedConfig });
 
   configDidUpdate();
 }
@@ -289,44 +314,48 @@ const scaleFactorSelector = () => store.state.config.scaleFactor;
 // Help Content
 const helpContent = {
   shellType: {
-    header: "Shell Type",
-    body: 'The type of firework that will be launched. Select "Random" for a nice assortment!',
+    header: "Loại pháo",
+    body: 'Loại pháo hoa sẽ được bắn. Chọn "Ngẫu nhiên" để có nhiều kiểu đa dạng.',
   },
   shellSize: {
-    header: "Shell Size",
-    body: "The size of the fireworks. Modeled after real firework shell sizes, larger shells have bigger bursts with more stars, and sometimes more complex effects. However, larger shells also require more processing power and may cause lag.",
+    header: "Cỡ pháo",
+    body: "Kích thước pháo hoa. Cỡ càng lớn thì chùm nổ càng to, nhiều tia hơn và đôi khi hiệu ứng phức tạp hơn. Tuy nhiên cũng tốn hiệu năng hơn và có thể gây giật lag.",
   },
   quality: {
-    header: "Quality",
-    body: "Overall graphics quality. If the animation is not running smoothly, try lowering the quality. High quality greatly increases the amount of sparks rendered and may cause lag.",
+    header: "Chất lượng",
+    body: "Chất lượng đồ hoạ tổng thể. Nếu chạy không mượt, hãy giảm chất lượng. Chất lượng cao tăng rất nhiều số lượng tia lửa nên có thể gây lag.",
   },
   skyLighting: {
-    header: "Sky Lighting",
-    body: 'Illuminates the background as fireworks explode. If the background looks too bright on your screen, try setting it to "Dim" or "None".',
+    header: "Ánh sáng nền",
+    body: 'Làm sáng nền khi pháo nổ. Nếu nền quá chói, hãy thử đặt "Mờ" hoặc "Tắt".',
   },
   scaleFactor: {
-    header: "Scale",
-    body: "Allows scaling the size of all fireworks, essentially moving you closer or farther away. For larger shell sizes, it can be convenient to decrease the scale a bit, especially on phones or tablets.",
+    header: "Tỉ lệ",
+    body: "Điều chỉnh tỉ lệ tổng thể của pháo hoa (như đứng gần/xa hơn). Với cỡ pháo lớn, bạn có thể giảm tỉ lệ một chút, đặc biệt trên điện thoại/máy tính bảng.",
   },
   autoLaunch: {
-    header: "Auto Fire",
-    body: "Launches sequences of fireworks automatically. Sit back and enjoy the show, or disable to have full control.",
+    header: "Tự bắn",
+    body: "Tự động bắn pháo theo chuỗi. Bật để xem trình diễn tự động, hoặc tắt để tự điều khiển.",
   },
   finaleMode: {
-    header: "Finale Mode",
-    body: 'Launches intense bursts of fireworks. May cause lag. Requires "Auto Fire" to be enabled.',
+    header: "Chế độ cao trào",
+    body: 'Bắn dồn dập (có thể gây lag). Chế độ này cần bật "Tự bắn".',
   },
   hideControls: {
-    header: "Hide Controls",
-    body: "Hides the translucent controls along the top of the screen. Useful for screenshots, or just a more seamless experience. While hidden, you can still tap the top-right corner to re-open this menu.",
+    header: "Ẩn điều khiển",
+    body: "Ẩn các nút điều khiển ở phía trên. Hữu ích khi trình chiếu/chụp ảnh. Khi đã ẩn, bạn vẫn có thể mở lại menu Cài đặt bằng phím O.",
+  },
+  lixiRain: {
+    header: "Mưa lì xì",
+    body: "Bật/tắt hiệu ứng mưa bao lì xì rơi trên màn hình.",
   },
   fullscreen: {
-    header: "Fullscreen",
-    body: "Toggles fullscreen mode.",
+    header: "Toàn màn hình",
+    body: "Bật/tắt chế độ toàn màn hình.",
   },
   longExposure: {
-    header: "Open Shutter",
-    body: "Experimental effect that preserves long streaks of light, similar to leaving a camera shutter open.",
+    header: "Phơi sáng",
+    body: "Hiệu ứng thử nghiệm giữ lại các vệt sáng dài, giống như chụp phơi sáng.",
   },
 };
 
@@ -339,6 +368,7 @@ const nodeKeyToHelpKey = {
   autoLaunchLabel: "autoLaunch",
   finaleModeLabel: "finaleMode",
   hideControlsLabel: "hideControls",
+  lixiRainLabel: "lixiRain",
   fullscreenLabel: "fullscreen",
   longExposureLabel: "longExposure",
 };
@@ -371,6 +401,7 @@ const appNodes = {
   finaleModeLabel: ".finale-mode-label",
   hideControls: ".hide-controls",
   hideControlsLabel: ".hide-controls-label",
+  lixiRainLabel: ".lixi-rain-label",
   fullscreenFormOption: ".form-option--fullscreen",
   fullscreen: ".fullscreen",
   fullscreenLabel: ".fullscreen-label",
@@ -426,6 +457,7 @@ function renderApp(state) {
 
   appNodes.menuInnerWrap.style.opacity = state.openHelpTopic ? 0.12 : 1;
   appNodes.helpModal.classList.toggle("active", !!state.openHelpTopic);
+  document.body.classList.toggle("menu-open", state.menuOpen);
   if (state.openHelpTopic) {
     const { header, body } = helpContent[state.openHelpTopic];
     appNodes.helpModalHeader.textContent = header;
@@ -563,6 +595,24 @@ function whiteOrGold() {
   return Math.random() < 0.5 ? COLOR.Gold : COLOR.White;
 }
 
+function randomWarmColor(options) {
+  // Bias towards warm/pink tones for blossoms.
+  const palette = [COLOR.Gold, COLOR.Red, COLOR.Purple, COLOR.White];
+  const notColor = options && options.notColor;
+  const limitWhite = options && options.limitWhite;
+
+  let color = palette[(Math.random() * palette.length) | 0];
+  if (limitWhite && color === COLOR.White && Math.random() < 0.6) {
+    color = palette[(Math.random() * (palette.length - 1)) | 0];
+  }
+  if (notColor) {
+    while (color === notColor) {
+      color = palette[(Math.random() * palette.length) | 0];
+    }
+  }
+  return color;
+}
+
 // Shell helpers
 function makePistilColor(shellColor) {
   return shellColor === COLOR.White || shellColor === COLOR.Gold
@@ -650,27 +700,28 @@ const palmShell = (size = 1) => {
     spreadSize: 250 + size * 75,
     starDensity: thick ? 0.15 : 0.4,
     starLife: 1800 + size * 200,
-    glitter: thick ? "thick" : "heavy",
+    starLifeVariation: 0.35,
+    glitter: thick ? "thick" : "light",
+    glitterColor: color === COLOR.Gold ? COLOR.Gold : COLOR.White,
+    streamers: thick,
   };
 };
 
 const ringShell = (size = 1) => {
-  const color = randomColor();
-  const pistil = Math.random() < 0.75;
+  const color = randomColor({ limitWhite: true });
+  const pistil = Math.random() < 0.5;
   return {
     shellSize: size,
     ring: true,
     color,
     spreadSize: 300 + size * 100,
-    starLife: 900 + size * 200,
-    starCount: 2.2 * PI_2 * (size + 1),
+    starLife: 900 + size * 210,
+    starLifeVariation: 0.4,
+    starCount: Math.floor(2.2 * (size + 3) * 8),
+    glitter: "",
     pistil,
-    pistilColor: makePistilColor(color),
-    glitter: !pistil ? "light" : "",
-    glitterColor: color === COLOR.Gold ? COLOR.Gold : COLOR.White,
-    streamers: Math.random() < 0.3,
+    pistilColor: pistil && makePistilColor(color),
   };
-  // return Object.assign({}, defaultShell, config);
 };
 
 const crossetteShell = (size = 1) => {
@@ -687,6 +738,56 @@ const crossetteShell = (size = 1) => {
     pistilColor: makePistilColor(color),
   };
 };
+
+// New: Hoa mai (burst into many small hoa mai)
+const maiBlossomShell = (size = 1) => ({
+  shellSize: size,
+  spreadSize: 360 + size * 90,
+  // Short primary life so it quickly "turns into" many blossoms.
+  starLife: 520 + size * 140,
+  starLifeVariation: 0.08,
+  // Keep seed count modest; each seed can spawn a blossom.
+  starCount: Math.max(8, 8 + Math.round(size * 4)),
+  color: INVISIBLE,
+  maiBlossom: true,
+});
+
+// New: Hoa đào (longer glowing)
+const peachBlossomShell = (size = 1) => ({
+  shellSize: size,
+  spreadSize: 320 + size * 110,
+  // Long glow
+  starLife: 2400 + size * 460,
+  starLifeVariation: 0.22,
+  // Long-lived stars stack up if autoLaunch is on; keep count low.
+  starDensity: isLowQuality ? 0.22 : 0.3,
+  // Use warm/pink palette for peach blossom look.
+  color: [
+    randomWarmColor({ limitWhite: true }),
+    randomWarmColor({ limitWhite: true }),
+  ],
+  glitter: "peach",
+  glitterColor: COLOR.White,
+  // Pistil adds another sub-shell; only enable on high quality.
+  pistil: isHighQuality && Math.random() < 0.5,
+  pistilColor: COLOR.White,
+});
+
+// New: Vietnam Flag (stylized waving flag + gold star)
+const vietnamFlagShell = (size = 1) => ({
+  shellSize: size,
+  spreadSize: 560 + size * 140,
+  starLife: 1900 + size * 320,
+  starLifeVariation: 0.12,
+  vietnamFlag: true,
+  // We'll place stars directly on the shape; keep drift small.
+  glitter: "peach",
+  glitterColor: COLOR.Gold,
+  // Keep burst workload bounded.
+  starCount: 1,
+  // Visible red lift/comet for a clearer launch.
+  color: COLOR.Red,
+});
 
 const floralShell = (size = 1) => ({
   shellSize: size,
@@ -779,7 +880,14 @@ function shellFromConfig(size) {
 // Get a random shell, not including processing intensive varients
 // Note this is only random when "Random" shell is selected in config.
 // Also, this does not create the shell, only returns the factory function.
-const fastShellBlacklist = ["Falling Leaves", "Floral", "Willow"];
+const fastShellBlacklist = [
+  "Falling Leaves",
+  "Floral",
+  "Willow",
+  "Mai Blossom",
+  "Peach Blossom",
+  "Vietnam Flag",
+];
 function randomFastShell() {
   const isRandom = shellNameSelector() === "Random";
   let shellName = isRandom ? randomShellName() : shellNameSelector();
@@ -800,7 +908,10 @@ const shellTypes = {
   Floral: floralShell,
   Ghost: ghostShell,
   "Horse Tail": horsetailShell,
+  "Mai Blossom": maiBlossomShell,
   Palm: palmShell,
+  "Peach Blossom": peachBlossomShell,
+  "Vietnam Flag": vietnamFlagShell,
   Ring: ringShell,
   Strobe: strobeShell,
   Willow: willowShell,
@@ -822,29 +933,48 @@ function init() {
     );
   }
 
-  // shell type
-  let options = "";
-  shellNames.forEach(
-    (opt) => (options += `<option value="${opt}">${opt}</option>`)
+  // shell type (labels in Vietnamese, values stay the same for logic)
+  const shellTypeLabels = {
+    Random: "Ngẫu nhiên",
+    Crackle: "Nổ lách tách",
+    Crossette: "Chẻ nhánh",
+    Crysanthemum: "Cúc",
+    "Falling Leaves": "Lá rơi",
+    Floral: "Hoa",
+    Ghost: "Ảo ảnh",
+    "Horse Tail": "Đuôi ngựa",
+    "Mai Blossom": "Hoa mai",
+    Palm: "Cọ",
+    "Peach Blossom": "Hoa đào",
+    "Vietnam Flag": "Cờ Việt Nam",
+    Ring: "Vòng",
+    Strobe: "Chớp nháy",
+    Willow: "Liễu rủ",
+  };
+  setOptionsForSelect(
+    appNodes.shellType,
+    shellNames.map((value) => ({
+      value,
+      label: shellTypeLabels[value] || value,
+    }))
   );
-  appNodes.shellType.innerHTML = options;
   // shell size
-  options = "";
+  let options = "";
   ['3"', '4"', '6"', '8"', '12"', '16"'].forEach(
     (opt, i) => (options += `<option value="${i}">${opt}</option>`)
   );
   appNodes.shellSize.innerHTML = options;
 
   setOptionsForSelect(appNodes.quality, [
-    { label: "Low", value: QUALITY_LOW },
-    { label: "Normal", value: QUALITY_NORMAL },
-    { label: "High", value: QUALITY_HIGH },
+    { label: "Thấp", value: QUALITY_LOW },
+    { label: "Trung bình", value: QUALITY_NORMAL },
+    { label: "Cao", value: QUALITY_HIGH },
   ]);
 
   setOptionsForSelect(appNodes.skyLighting, [
-    { label: "None", value: SKY_LIGHT_NONE },
-    { label: "Dim", value: SKY_LIGHT_DIM },
-    { label: "Normal", value: SKY_LIGHT_NORMAL },
+    { label: "Tắt", value: SKY_LIGHT_NONE },
+    { label: "Mờ", value: SKY_LIGHT_DIM },
+    { label: "Vừa", value: SKY_LIGHT_NORMAL },
   ]);
 
   // 0.9 is mobile default
@@ -864,6 +994,19 @@ function init() {
 
   // Apply initial config
   configDidUpdate();
+}
+
+function applyPresentationDefaults() {
+  // Defaults on page load:
+  // - Hide controls
+  // - Disable extra effects
+  // - Sound enabled
+  store.state.soundEnabled = true;
+  store.state.config.autoLaunch = false;
+  store.state.config.finale = false;
+  store.state.config.skyLighting = String(SKY_LIGHT_NONE);
+  store.state.config.longExposure = false;
+  store.state.config.hideControls = true;
 }
 
 function fitShellPositionInBoundsH(position) {
@@ -1135,25 +1278,44 @@ let activePointerCount = 0;
 let isUpdatingSpeed = false;
 
 function handlePointerStart(event) {
+  ensureAudioUnlocked();
   activePointerCount++;
   const btnSize = 50;
 
-  if (event.y < btnSize) {
-    if (event.x < btnSize) {
+  // Top-edge quick controls only when HUD is hidden or menu is open.
+  if (
+    event.y < btnSize &&
+    (store.state.menuOpen ||
+      document.body.classList.contains("hud-hidden") ||
+      (store.state.config.hideControls &&
+        (!appNodes.controls || !appNodes.controls.matches(":hover"))))
+  ) {
+    // If the pointer is actually over UI controls/menu, don't also trigger quick-controls.
+    try {
+      const el = document.elementFromPoint(event.x, event.y);
+      if (el && el.closest && el.closest(".controls, .menu, .help-modal")) {
+        return;
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    const w = mainStage.width;
+    const q = w / 4;
+    if (event.x < q) {
       togglePause();
       return;
     }
-    if (
-      event.x > mainStage.width / 2 - btnSize / 2 &&
-      event.x < mainStage.width / 2 + btnSize / 2
-    ) {
-      toggleSound();
+    if (event.x < q * 2) {
+      handleSoundToggle();
       return;
     }
-    if (event.x > mainStage.width - btnSize) {
-      toggleMenu();
+    if (event.x < q * 3) {
+      toggleLixiRain();
       return;
     }
+    toggleMenu();
+    return;
   }
 
   if (!isRunning()) return;
@@ -1179,6 +1341,13 @@ function handlePointerMove(event) {
 }
 
 function handleKeydown(event) {
+  ensureAudioUnlocked();
+  // Ignore hotkeys while typing/selecting.
+  const targetTag = event.target && event.target.tagName;
+  if (targetTag === "INPUT" || targetTag === "SELECT" || targetTag === "TEXTAREA") {
+    return;
+  }
+
   // P
   if (event.keyCode === 80) {
     togglePause();
@@ -1187,16 +1356,246 @@ function handleKeydown(event) {
   else if (event.keyCode === 79) {
     toggleMenu();
   }
+  // H (hide/show HUD)
+  else if (event.keyCode === 72) {
+    document.body.classList.toggle("hud-hidden");
+  }
+  // L (toggle lì xì rain)
+  else if (event.keyCode === 76) {
+    toggleLixiRain();
+  }
+  // A (toggle Auto Fire)
+  else if (event.keyCode === 65) {
+    try {
+      updateConfig({ autoLaunch: !store.state.config.autoLaunch });
+    } catch (e) {
+      // ignore
+    }
+  }
+  // F (toggle Finale Mode)
+  else if (event.keyCode === 70) {
+    try {
+      const nextFinale = !store.state.config.finale;
+      // Finale mode is only meaningful with auto fire enabled.
+      updateConfig({
+        autoLaunch: nextFinale ? true : store.state.config.autoLaunch,
+        finale: nextFinale,
+      });
+    } catch (e) {
+      // ignore
+    }
+  }
   // Esc
   else if (event.keyCode === 27) {
     toggleMenu(false);
   }
 }
 
+// Presentation extras: Lì xì rain + HUD controls
+const lixiRainEl = document.getElementById("lixi-rain");
+const lixiBtn = document.querySelector(".lixi-btn");
+const lixiToggle = document.querySelector(".lixi-rain-toggle");
+const chucMungCloseBtn = document.querySelector("#chucMung .panel-close");
+
+const prefersReducedMotion =
+  window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let lixiEnabled = false;
+let lixiAnimId = 0;
+let lixiLastTs = 0;
+let lixiSpawnAcc = 0;
+const lixiItems = [];
+
+function readLixiEnabled() {
+  try {
+    return localStorage.getItem("cm_lixi_rain") === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
+function persistLixiEnabled(enabled) {
+  try {
+    localStorage.setItem("cm_lixi_rain", enabled ? "1" : "0");
+  } catch (e) {
+    // ignore
+  }
+}
+
+function setLixiRainEnabled(enabled) {
+  if (!lixiRainEl) return;
+  if (prefersReducedMotion) enabled = false;
+
+  lixiEnabled = !!enabled;
+  lixiRainEl.classList.toggle("hidden", !lixiEnabled);
+  lixiRainEl.setAttribute("aria-hidden", lixiEnabled ? "false" : "true");
+  if (lixiToggle) lixiToggle.checked = lixiEnabled;
+  persistLixiEnabled(lixiEnabled);
+
+  if (lixiEnabled) {
+    startLixiRain();
+  } else {
+    stopLixiRain();
+  }
+}
+
+function toggleLixiRain() {
+  setLixiRainEnabled(!lixiEnabled);
+}
+
+function spawnLixiItem() {
+  if (!lixiRainEl) return;
+  const el = document.createElement("img");
+  el.className = "lixi-item";
+  el.alt = "";
+  el.setAttribute("aria-hidden", "true");
+  el.draggable = false;
+  el.decoding = "async";
+  el.src = "./assets/lixi.svg";
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const x = Math.random() * w;
+  const y = -40 - Math.random() * 120;
+  const size = 18 + Math.random() * 18;
+  const speed = 110 + Math.random() * 220;
+  const drift = (Math.random() - 0.5) * 40;
+  const rot = (Math.random() - 0.5) * 0.8;
+  el.style.width = size + "px";
+  el.style.height = size + "px";
+  el.style.opacity = String(0.75 + Math.random() * 0.25);
+  lixiRainEl.appendChild(el);
+
+  lixiItems.push({
+    el,
+    x,
+    y,
+    vx: drift,
+    vy: speed,
+    r: Math.random() * Math.PI * 2,
+    vr: rot,
+    h,
+  });
+}
+
+function startLixiRain() {
+  if (!lixiRainEl || lixiAnimId) return;
+  lixiLastTs = performance.now();
+  lixiSpawnAcc = 0;
+  lixiAnimId = requestAnimationFrame(tickLixiRain);
+}
+
+function stopLixiRain() {
+  if (lixiAnimId) {
+    cancelAnimationFrame(lixiAnimId);
+    lixiAnimId = 0;
+  }
+  if (!lixiRainEl) return;
+
+  // Cleanup DOM nodes
+  while (lixiItems.length) {
+    const item = lixiItems.pop();
+    if (item && item.el && item.el.parentNode) item.el.parentNode.removeChild(item.el);
+  }
+}
+
+function tickLixiRain(ts) {
+  if (!lixiEnabled || !lixiRainEl) {
+    lixiAnimId = 0;
+    return;
+  }
+
+  const dt = Math.min(0.05, (ts - lixiLastTs) / 1000);
+  lixiLastTs = ts;
+
+  // Spawn rate: ~10 items/second
+  lixiSpawnAcc += dt;
+  const spawnEvery = 0.10;
+  while (lixiSpawnAcc >= spawnEvery) {
+    lixiSpawnAcc -= spawnEvery;
+    if (lixiItems.length < 90) spawnLixiItem();
+  }
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  for (let i = lixiItems.length - 1; i >= 0; i--) {
+    const it = lixiItems[i];
+    it.y += it.vy * dt;
+    it.x += it.vx * dt;
+    it.r += it.vr;
+
+    // wrap slightly
+    if (it.x < -60) it.x = w + 60;
+    if (it.x > w + 60) it.x = -60;
+
+    it.el.style.transform = `translate3d(${it.x}px, ${it.y}px, 0) rotate(${it.r}rad)`;
+
+    if (it.y > h + 80) {
+      if (it.el.parentNode) it.el.parentNode.removeChild(it.el);
+      lixiItems.splice(i, 1);
+    }
+  }
+
+  lixiAnimId = requestAnimationFrame(tickLixiRain);
+}
+
+function handleBtnLikeClick(el, handler) {
+  if (!el) return;
+  el.addEventListener("click", (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    handler();
+  });
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      handler();
+    }
+  });
+}
+
+handleBtnLikeClick(appNodes.pauseBtn, () => togglePause());
+handleBtnLikeClick(appNodes.soundBtn, handleSoundToggle);
+handleBtnLikeClick(document.querySelector(".settings-btn"), () => toggleMenu(true));
+handleBtnLikeClick(document.querySelector(".close-menu-btn"), () => toggleMenu(false));
+
+// Prevent UI interactions from also triggering stage pointer handlers.
+if (appNodes.controls) {
+  ["pointerdown", "pointerup", "pointermove"].forEach((type) => {
+    appNodes.controls.addEventListener(type, (e) => e.stopPropagation(), true);
+  });
+}
+
+handleBtnLikeClick(lixiBtn, toggleLixiRain);
+if (lixiToggle) {
+  lixiToggle.addEventListener("click", () => setLixiRainEnabled(lixiToggle.checked));
+}
+if (chucMungCloseBtn) {
+  chucMungCloseBtn.addEventListener("click", () => {
+    const chucMung = document.getElementById("chucMung");
+    if (chucMung) chucMung.classList.add("hidden");
+  });
+}
+
+// Presentation default: start with lixi rain OFF
+setLixiRainEnabled(false);
+
 mainStage.addEventListener("pointerstart", handlePointerStart);
 mainStage.addEventListener("pointerend", handlePointerEnd);
 mainStage.addEventListener("pointermove", handlePointerMove);
 window.addEventListener("keydown", handleKeydown);
+
+// Unlock audio on the first user interaction anywhere.
+window.addEventListener(
+  "pointerdown",
+  () => {
+    ensureAudioUnlocked();
+  },
+  { once: true, passive: true }
+);
 
 // Account for window resize and custom scale changes.
 function handleResize() {
@@ -1681,6 +2080,153 @@ function crackleEffect(star) {
   });
 }
 
+// Cached point cloud for a stylized Vietnam flag (waving rectangle + gold star).
+let _vietnamFlagPoints = null;
+function getVietnamFlagPointCloud() {
+  if (_vietnamFlagPoints) return _vietnamFlagPoints;
+
+  const pts = [];
+  const add = (x, y, c, k) => pts.push({ x, y, c, k });
+
+  const pointInPoly = (px, py, poly) => {
+    // Ray-casting algorithm.
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i].x;
+      const yi = poly[i].y;
+      const xj = poly[j].x;
+      const yj = poly[j].y;
+      const intersect =
+        yi > py !== yj > py &&
+        px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-9) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  };
+
+  // Flag bounds in normalized space.
+  const w = 1.8;
+  const h = 1.15;
+  const x0 = -w / 2;
+  const x1 = w / 2;
+  const y0 = -h / 2;
+  const y1 = h / 2;
+
+  // Softer flag silhouette
+  const waveAmp = 0.075;
+  const waveFreq = 0.95;
+  const topWave = (x) => -waveAmp * Math.sin((x + 0.2) * Math.PI * waveFreq);
+  const botWave = (x) => waveAmp * Math.sin((x - 0.15) * Math.PI * waveFreq);
+
+  // Border path (used for polygon only; we don't render a border)
+  const borderStep = 0.022;
+  const topY = (x) => y0 + topWave(x);
+  const botY = (x) => y1 + botWave(x);
+  const yTL = topY(x0);
+  const yTR = topY(x1);
+  const yBL = botY(x0);
+  const yBR = botY(x1);
+
+  const flagPoly = [];
+
+  const sideAmp = 0.045;
+  const sideFreq = 0.8;
+  const sideWobble = (t, phase) =>
+    sideAmp * Math.sin(Math.PI * t) * Math.sin((t * sideFreq + phase) * PI_2);
+  const leftX = (t) => x0 + sideWobble(t, 0.15);
+  const rightX = (t) => x1 + sideWobble(t, -0.05);
+
+  // Top
+  for (let x = x0; x <= x1; x += borderStep) {
+    const y = topY(x);
+    flagPoly.push({ x, y });
+  }
+  // Right
+  for (let y = yTR; y <= yBR; y += borderStep) {
+    const t = (y - yTR) / (yBR - yTR + 1e-9);
+    const x = rightX(t);
+    flagPoly.push({ x, y });
+  }
+  // Bottom
+  for (let x = x1; x >= x0; x -= borderStep) {
+    const y = botY(x);
+    flagPoly.push({ x, y });
+  }
+  // Left
+  for (let y = yBL; y >= yTL; y -= borderStep) {
+    const t = (y - yTL) / (yBL - yTL + 1e-9);
+    const x = leftX(t);
+    flagPoly.push({ x, y });
+  }
+
+  // Outline-only: render the silhouette itself (no interior fill).
+  for (let i = 0; i < flagPoly.length; i += 1) {
+    const p = flagPoly[i];
+    add(p.x, p.y, COLOR.Red, "edge");
+  }
+
+  // Center star (gold). Build polygon early so we can keep the flag fill from bleeding into it.
+  const starR = 0.30;
+  const starr = 0.13;
+  const starVerts = [];
+  for (let i = 0; i < 10; i += 1) {
+    const rr = i % 2 === 0 ? starR : starr;
+    const ang = -Math.PI / 2 + (i / 10) * PI_2;
+    starVerts.push({ x: Math.cos(ang) * rr, y: Math.sin(ang) * rr });
+  }
+  // Outline-only: no star fill, only star edge points.
+
+  // Softer star outline: more edge points, but no heavy fill increase.
+  const edgeSamples = 10;
+  for (let i = 0; i < starVerts.length; i += 1) {
+    const a = starVerts[i];
+    const b = starVerts[(i + 1) % starVerts.length];
+    for (let t = 0; t <= edgeSamples; t += 1) {
+      const u = t / edgeSamples;
+      add(a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u, COLOR.Gold, "starEdge");
+    }
+  }
+
+  _vietnamFlagPoints = pts;
+  return pts;
+}
+
+// Mai blossom: 5-petal small flower burst.
+// Designed to be light enough for autoLaunch without freezing.
+function maiBlossomEffect(star) {
+  const petals = 5;
+  const petalStars = isLowQuality ? 1 : isHighQuality ? 2 : 1;
+  const baseSpeed = 0.95;
+  const life = 560 + Math.random() * 180;
+  const petalAngleOffset = Math.random() * (Math.PI / petals);
+  const baseColor =
+    star._maiColor ||
+    (Math.random() < 0.55 ? COLOR.Gold : randomWarmColor({ limitWhite: true }));
+  const accentColor =
+    star._maiAccent ||
+    (Math.random() < 0.7
+      ? COLOR.White
+      : randomWarmColor({ limitWhite: true, notColor: baseColor }));
+
+  for (let i = 0; i < petals; i += 1) {
+    const a = (i / petals) * PI_2 + petalAngleOffset;
+    for (let j = 0; j < petalStars; j += 1) {
+      const aj = a + (Math.random() - 0.5) * 0.14;
+      const s = baseSpeed + Math.random() * 0.55;
+      const c = !isLowQuality && Math.random() < 0.22 ? accentColor : baseColor;
+      const p = Star.add(star.x, star.y, c, aj, s, life);
+      // Keep sparks minimal to prevent frame drops when many blossoms spawn.
+      if (isHighQuality) {
+        p.sparkFreq = 520;
+        p.sparkSpeed = 0.2;
+        p.sparkLife = 420;
+        p.sparkLifeVariation = 1.8;
+        p.sparkColor = COLOR.Gold;
+      }
+    }
+  }
+}
+
 /**
  * Shell can be constructed with options:
  *
@@ -1763,6 +2309,14 @@ class Shell {
       comet.sparkColor = COLOR.Gold;
     }
 
+    if (this.vietnamFlag) {
+      comet.sparkColor = COLOR.Gold;
+      comet.sparkSpeed = 0.55;
+      comet.sparkLife = 520;
+      comet.sparkLifeVariation = 2.2;
+      comet.sparkFreq = isHighQuality ? 6 : 14 / quality;
+    }
+
     // Randomly make comet "burn out" a bit early.
     // This is disabled for horsetail shells, due to their very short airtime.
     if (Math.random() > 0.4 && !this.horsetail) {
@@ -1802,6 +2356,13 @@ class Shell {
       };
     if (this.floral) onDeath = floralEffect;
     if (this.fallingLeaves) onDeath = fallingLeavesEffect;
+    if (this.maiBlossom) {
+      // Each seed star can spawn a small blossom; keep this bounded for performance.
+      const spawnChance = isLowQuality ? 0.6 : isHighQuality ? 0.85 : 0.72;
+      onDeath = (star) => {
+        if (Math.random() < spawnChance) maiBlossomEffect(star);
+      };
+    }
 
     if (this.glitter === "light") {
       sparkFreq = 400;
@@ -1813,6 +2374,12 @@ class Shell {
       sparkSpeed = 0.44;
       sparkLife = 700;
       sparkLifeVariation = 2;
+    } else if (this.glitter === "peach") {
+      // Long glow but fewer sparks to avoid accumulating workload.
+      sparkFreq = 900;
+      sparkSpeed = 0.26;
+      sparkLife = 520;
+      sparkLifeVariation = 1.8;
     } else if (this.glitter === "heavy") {
       sparkFreq = 80;
       sparkSpeed = 0.8;
@@ -1838,6 +2405,99 @@ class Shell {
     // Apply quality to spark count
     sparkFreq = sparkFreq / quality;
 
+    // Custom: Vietnam Flag (stylized). Place stars directly onto the flag shape.
+    if (this.vietnamFlag) {
+      const points = getVietnamFlagPointCloud();
+      const maxPoints = isLowQuality ? 1200 : isHighQuality ? 2800 : 1800;
+      const redEdgePoints = [];
+      const goldEdgePoints = [];
+      for (let i = 0; i < points.length; i += 1) {
+        const p = points[i];
+        if (p.c === COLOR.Gold) {
+          if (p.k === "starEdge") goldEdgePoints.push(p);
+        } else {
+          if (p.k === "edge") redEdgePoints.push(p);
+        }
+      }
+
+      // Smaller flag (keep form tighter).
+      const radius = this.spreadSize * 0.32;
+      // Keep form: give the entire shape a tiny shared drift (no outward expansion).
+      const sharedSpeedX = 0;
+      const sharedSpeedY = -speed * 0.085;
+
+      // Outline-only budgets
+      const goldBudget = Math.max(60, Math.floor(maxPoints * (isLowQuality ? 0.22 : 0.26)));
+      const redBudget = Math.max(220, maxPoints - goldBudget);
+      const redEdgeBudget = Math.min(redEdgePoints.length, redBudget);
+      const goldEdgeBudget = Math.min(goldEdgePoints.length, goldBudget);
+
+      const hash01 = (a, b, seed) => {
+        const v = Math.sin(a * 12.9898 + b * 78.233 + seed * 37.719) * 43758.5453;
+        return v - Math.floor(v);
+      };
+
+      const spawnFromList = (list, budget, isGold) => {
+        const stride = Math.max(1, Math.ceil(list.length / budget));
+        for (let i = 0; i < list.length; i += stride) {
+          const p = list[i];
+          // Keep dots aligned (uniform look). Randomness comes from optional glints, not position jitter.
+          let px = x + p.x * radius;
+          let py = y + p.y * radius;
+          // Micro-jitter only on edge/outline points to soften the silhouette.
+          if (p.k === "edge" || p.k === "starEdge") {
+            const jx = (hash01(p.x, p.y, 5) - 0.5) * 0.85;
+            const jy = (hash01(p.x, p.y, 6) - 0.5) * 0.85;
+            px += jx;
+            py += jy;
+          }
+          const ang = MyMath.pointAngle(x, y, px, py);
+
+          // Very gentle flutter: stronger toward the free end (right side).
+          const t = (p.x + 0.9) / 1.8;
+          const flutter = Math.max(0, Math.min(1, t));
+          const baseFlutter = isLowQuality ? 0.08 : 0.12;
+          const flutterAmp = baseFlutter + flutter * (isLowQuality ? 0.14 : 0.22);
+          const flutterSpeed = (isLowQuality ? 0.1 : 0.13) + flutter * 0.16;
+
+          const star = Star.add(
+            px,
+            py,
+            p.c,
+            ang,
+            0,
+            this.starLife +
+              Math.random() * this.starLife * this.starLifeVariation,
+            sharedSpeedX,
+            sharedSpeedY
+          );
+
+          // Keep the gold star steadier than the red field.
+          const isGoldStar = p.c === COLOR.Gold;
+          const amp = isGoldStar ? flutterAmp * 0.14 : flutterAmp;
+          const spd = isGoldStar ? flutterSpeed * 0.22 : flutterSpeed;
+          // Prevent edge dots from drifting outside the flag silhouette.
+          const isEdgePoint = p.k === "edge";
+          const isStarEdgePoint = p.k === "starEdge";
+          star.spinRadius = isEdgePoint ? amp * 0.42 : isStarEdgePoint ? amp * 0.65 : amp;
+          star.spinSpeed = isEdgePoint ? spd * 0.55 : isStarEdgePoint ? spd * 0.75 : spd;
+          star.spinAngle = flutter * PI_2 + Math.random() * 0.6;
+
+          // Outline-only: no extra sparkle layer.
+        }
+      };
+
+      // Render edge highlights first so they read as a soft outline.
+      spawnFromList(redEdgePoints, redEdgeBudget || redEdgePoints.length, false);
+      spawnFromList(goldEdgePoints, goldEdgeBudget || goldEdgePoints.length, true);
+
+      BurstFlash.add(x, y, this.spreadSize / 4);
+      if (this.comet) {
+        soundManager.playSound("burst", 0.9);
+      }
+      return;
+    }
+
     // Star factory for primary burst, pistils, and streamers.
     let firstStar = true;
     const starFactory = (angle, speedMult) => {
@@ -1857,6 +2517,16 @@ class Shell {
         this.horsetail ? this.comet && this.comet.speedX : 0,
         this.horsetail ? this.comet && this.comet.speedY : -standardInitialSpeed
       );
+
+      if (this.maiBlossom) {
+        // Choose colors once per seed star, so each small blossom has a coherent look.
+        const base = Math.random() < 0.6 ? COLOR.Gold : randomWarmColor({ limitWhite: true });
+        star._maiColor = base;
+        star._maiAccent =
+          Math.random() < 0.7
+            ? COLOR.White
+            : randomWarmColor({ limitWhite: true, notColor: base });
+      }
 
       if (this.secondColor) {
         star.transitionTime = this.starLife * (Math.random() * 0.05 + 0.32);
@@ -2217,17 +2887,44 @@ const soundManager = {
     this.ctx.suspend();
   },
 
+  // Unlock audio on browsers that require a user gesture.
+  // Safe to call repeatedly.
+  unlock() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    // Resume immediately; calling inside user gesture is key.
+    try {
+      const p = ctx.resume();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch (e) {
+      // ignore
+    }
+
+    // Silent blip helps "unlock" on iOS.
+    try {
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      gain.connect(ctx.destination);
+      const osc = ctx.createOscillator();
+      osc.frequency.value = 220;
+      osc.connect(gain);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.01);
+    } catch (e) {
+      // ignore
+    }
+  },
+
   resumeAll() {
-    // Play a sound with no volume for iOS. This 'unlocks' the audio context when the user first enables sound.
-    this.playSound("lift", 0);
-    // Chrome mobile requires interaction before starting audio context.
-    // The sound toggle button is triggered on 'touchstart', which doesn't seem to count as a full
-    // interaction to Chrome. I guess it needs a click? At any rate if the first thing the user does
-    // is enable audio, it doesn't work. Using a setTimeout allows the first interaction to be registered.
-    // Perhaps a better solution is to track whether the user has interacted, and if not but they try enabling
-    // sound, show a tooltip that they should tap again to enable sound.
+    // Try to resume; may still require user gesture (handled by ensureAudioUnlocked()).
+    this.unlock();
     setTimeout(() => {
-      this.ctx.resume();
+      try {
+        this.ctx.resume();
+      } catch (e) {
+        // ignore
+      }
     }, 250);
   },
 
@@ -2317,8 +3014,242 @@ if (IS_HEADER) {
   }, 0);
 }
 
-// Set the date we're counting down to
-var countDownDate = new Date("Feb 10, 2024 00:00:00").getTime();
+// Set the date we're counting down to: Tết Âm lịch (Lunar New Year)
+// Uses a small lookup table for upcoming years (local time).
+function getNextLunarNewYearDate() {
+  const now = new Date();
+  const table = {
+    // month is 0-based (Jan = 0)
+    2025: [0, 29],
+    2026: [1, 17],
+    2027: [1, 6],
+    2028: [0, 26],
+    2029: [1, 13],
+    2030: [1, 3],
+    2031: [0, 23],
+    2032: [1, 11],
+    2033: [0, 31],
+    2034: [1, 19],
+    2035: [1, 8],
+  };
+
+  const startYear = now.getFullYear();
+  for (let y = startYear; y <= startYear + 10; y += 1) {
+    const entry = table[y];
+    if (!entry) continue;
+    const [m, d] = entry;
+    const dt = new Date(y, m, d, 0, 0, 0, 0);
+    if (dt.getTime() >= now.getTime()) return dt;
+  }
+
+  // Fallback: next Jan 1
+  const nextYear = startYear + 1;
+  return new Date(nextYear, 0, 1, 0, 0, 0, 0);
+}
+
+const countdownTargetDate = getNextLunarNewYearDate();
+var countDownDate = countdownTargetDate.getTime();
+
+const chucMungYearEl = document.getElementById("chucMungYear");
+if (chucMungYearEl) {
+  chucMungYearEl.textContent = String(countdownTargetDate.getFullYear());
+}
+
+const countdownTitleEl = document.getElementById("title");
+if (countdownTitleEl) {
+  countdownTitleEl.textContent = `Countdown đến Tết Âm Lịch ${countdownTargetDate.getFullYear()}`;
+}
+
+// Countdown widget behavior: show big on load, then dock to corner.
+const countdownEl = document.getElementById("countdown");
+let countdownDockTimer = 0;
+const COUNTDOWN_DOCK_MARGIN = 12;
+const COUNTDOWN_DOCK_SCALE = 0.60;
+let countdownExpandedSize = null;
+let countdownDockedSize = null;
+let countdownHasPositionedOnce = false;
+
+function setCountdownDocked(docked) {
+  if (!countdownEl) return;
+
+  if (docked) {
+    countdownEl.classList.add("countdown-docked");
+    countdownEl.classList.remove("countdown-expanded");
+    // Let docked styles apply first (they change size), then measure + position.
+    requestAnimationFrame(() => {
+      measureCountdownDockedSize(true);
+      applyCountdownDockPosition();
+
+      if (!countdownHasPositionedOnce) {
+        countdownHasPositionedOnce = true;
+        // Reveal after we have a real dock position.
+        countdownEl.classList.remove("countdown-init");
+      }
+    });
+  } else {
+    countdownEl.classList.remove("countdown-docked");
+    countdownEl.classList.add("countdown-expanded");
+    countdownEl.style.top = "50%";
+    countdownEl.style.left = "50%";
+    countdownEl.style.setProperty("--countdown-tx", "-50%");
+    countdownEl.style.setProperty("--countdown-ty", "-50%");
+    countdownEl.style.setProperty("--dock-scale", "1");
+    // Re-measure once it has expanded.
+    requestAnimationFrame(() => measureCountdownExpandedSize(false));
+  }
+}
+
+function measureCountdownExpandedSize(force = false) {
+  if (!countdownEl) return;
+  if (!force && countdownEl.classList.contains("countdown-docked")) return;
+  const rect = countdownEl.getBoundingClientRect();
+  countdownExpandedSize = { width: rect.width, height: rect.height };
+}
+
+function measureCountdownDockedSize(force = false) {
+  if (!countdownEl) return;
+  if (!countdownEl.classList.contains("countdown-docked")) return;
+  if (!force && countdownDockedSize) return;
+
+  // Measure at scale 1 so we can compute a stable dock scale/position.
+  const prevScale = countdownEl.style.getPropertyValue("--dock-scale");
+  countdownEl.style.setProperty("--dock-scale", "1");
+  const rect = countdownEl.getBoundingClientRect();
+  countdownDockedSize = { width: rect.width, height: rect.height };
+  if (prevScale) {
+    countdownEl.style.setProperty("--dock-scale", prevScale);
+  } else {
+    countdownEl.style.removeProperty("--dock-scale");
+  }
+}
+
+function applyCountdownDockPosition() {
+  if (!countdownEl) return;
+
+  // Docked mode uses a different layout (time-only), so base sizing must come
+  // from the docked layout rather than the expanded layout.
+  if (countdownEl.classList.contains("countdown-docked")) {
+    measureCountdownDockedSize();
+  }
+
+  const rect = countdownDockedSize || countdownExpandedSize || countdownEl.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+  const maxScaleX = (window.innerWidth - COUNTDOWN_DOCK_MARGIN * 2) / w;
+  const maxScaleY = (window.innerHeight - COUNTDOWN_DOCK_MARGIN * 2) / h;
+  // Allow smaller scaling so docked time stays on one line on small screens.
+  const scale = Math.max(0.25, Math.min(COUNTDOWN_DOCK_SCALE, maxScaleX, maxScaleY, 1));
+
+  // Place the element by top/left in px, and remove the -50% centering translate.
+  // Keep it fully visible by clamping.
+  const scaledW = w * scale;
+  const scaledH = h * scale;
+  const targetLeft = Math.max(
+    COUNTDOWN_DOCK_MARGIN,
+    Math.round(window.innerWidth - COUNTDOWN_DOCK_MARGIN - scaledW)
+  );
+  const targetTop = Math.max(
+    COUNTDOWN_DOCK_MARGIN,
+    Math.round(window.innerHeight - COUNTDOWN_DOCK_MARGIN - scaledH)
+  );
+
+  countdownEl.style.left = targetLeft + "px";
+  countdownEl.style.top = targetTop + "px";
+  countdownEl.style.right = "auto";
+  countdownEl.style.bottom = "auto";
+  countdownEl.style.setProperty("--countdown-tx", "0px");
+  countdownEl.style.setProperty("--countdown-ty", "0px");
+  countdownEl.style.setProperty("--dock-scale", String(scale));
+
+  // Snap fully into viewport after transforms apply.
+  requestAnimationFrame(() => clampCountdownIntoViewport());
+  // And once more after the transition finishes (handles slow fonts/layout shifts).
+  window.setTimeout(() => clampCountdownIntoViewport(), 720);
+}
+
+function clampCountdownIntoViewport() {
+  if (!countdownEl) return;
+  if (!countdownEl.classList.contains("countdown-docked")) return;
+
+  const r = countdownEl.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let left = parseFloat(countdownEl.style.left || "0");
+  let top = parseFloat(countdownEl.style.top || "0");
+
+  // If any side is out of bounds, adjust.
+  const overflowRight = r.right - (vw - COUNTDOWN_DOCK_MARGIN);
+  const overflowBottom = r.bottom - (vh - COUNTDOWN_DOCK_MARGIN);
+  const overflowLeft = COUNTDOWN_DOCK_MARGIN - r.left;
+  const overflowTop = COUNTDOWN_DOCK_MARGIN - r.top;
+
+  if (overflowRight > 0) left -= overflowRight;
+  if (overflowBottom > 0) top -= overflowBottom;
+  if (overflowLeft > 0) left += overflowLeft;
+  if (overflowTop > 0) top += overflowTop;
+
+  // Final clamp on numeric left/top.
+  left = Math.max(COUNTDOWN_DOCK_MARGIN, Math.min(left, vw - COUNTDOWN_DOCK_MARGIN));
+  top = Math.max(COUNTDOWN_DOCK_MARGIN, Math.min(top, vh - COUNTDOWN_DOCK_MARGIN));
+
+  countdownEl.style.left = Math.round(left) + "px";
+  countdownEl.style.top = Math.round(top) + "px";
+}
+
+function scheduleCountdownAutoDock() {
+  if (!countdownEl) return;
+  if (countdownDockTimer) window.clearTimeout(countdownDockTimer);
+  // Give a short "intro" moment, then dock so fireworks stay prominent.
+  countdownDockTimer = window.setTimeout(() => setCountdownDocked(true), 5000);
+}
+
+function toggleCountdownDock() {
+  if (!countdownEl) return;
+  const docked = countdownEl.classList.contains("countdown-docked");
+  setCountdownDocked(!docked);
+}
+
+if (countdownEl) {
+  // Hide until we compute the initial dock position to avoid visible jumping.
+  countdownEl.classList.add("countdown-init");
+
+  // Start docked by default (presentation-first).
+  // Measure after first paint so the card size is known.
+  requestAnimationFrame(() => {
+    setCountdownDocked(true);
+  });
+
+  // Click the card to toggle dock/expand.
+  countdownEl.addEventListener("click", () => {
+    toggleCountdownDock();
+  });
+}
+
+// If fonts load after initial paint, re-apply docking to prevent subtle drift.
+if (countdownEl && document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => {
+    if (countdownEl.classList.contains("countdown-docked")) {
+      countdownEl.classList.add("countdown-no-transition");
+      measureCountdownDockedSize(true);
+      applyCountdownDockPosition();
+      window.setTimeout(() => {
+        countdownEl.classList.remove("countdown-no-transition");
+      }, 800);
+    }
+  });
+}
+
+window.addEventListener("resize", () => {
+  if (countdownEl && countdownEl.classList.contains("countdown-docked")) {
+    countdownDockedSize = null;
+    measureCountdownDockedSize(true);
+    applyCountdownDockPosition();
+  } else {
+    measureCountdownExpandedSize();
+  }
+});
+
 function showChucMung() {
   var chucMung = document.getElementById("chucMung");
   chucMung.classList.remove("hidden");
@@ -2345,9 +3276,23 @@ var x = setInterval(function () {
   document.getElementById("seconds").innerHTML =
     seconds < 10 ? "0" + seconds : seconds;
   // If the countdown is over, display a message
-  if (distance > 0) {
+  if (distance <= 0) {
     clearInterval(x);
-    document.getElementById("countdown").innerHTML = "";
+    const countdownEl2 = document.getElementById("countdown");
+    if (countdownEl2) countdownEl2.classList.add("hidden");
+
+    // Finale moment: turn on finale + auto fire, and start lì xì rain.
+    try {
+      updateConfig({ autoLaunch: true, finale: true });
+    } catch (e) {
+      // ignore
+    }
+    try {
+      setLixiRainEnabled(true);
+    } catch (e) {
+      // ignore
+    }
+
     showChucMung();
   }
 }, 1000);

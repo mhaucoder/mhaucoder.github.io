@@ -886,7 +886,6 @@ const fastShellBlacklist = [
   "Willow",
   "Mai Blossom",
   "Peach Blossom",
-  "Vietnam Flag",
 ];
 function randomFastShell() {
   const isRandom = shellNameSelector() === "Random";
@@ -1218,12 +1217,222 @@ function seqSmallBarrage() {
 seqSmallBarrage.cooldown = 15000;
 seqSmallBarrage.lastCalled = Date.now();
 
+// ============================================
+// HỆ THỐNG SHOW PATTERNS - Màn trình diễn có kịch bản
+// ============================================
+const showPatterns = {
+  // Pattern 1: Quét đối xứng trái-phải với Vietnam Flag ở giữa
+  mirrorSweep: {
+    name: "Mirror Sweep",
+    duration: 10000,
+    timeline: [
+      { t: 0, x: 0.2, h: 0.7, shell: "Crysanthemum", size: 3 },
+      { t: 150, x: 0.8, h: 0.7, shell: "Crysanthemum", size: 3 },
+      { t: 500, x: 0.15, h: 0.6, shell: "Crossette", size: 2.5 },
+      { t: 650, x: 0.85, h: 0.6, shell: "Crossette", size: 2.5 },
+      { t: 1000, x: 0.3, h: 0.75, shell: "Palm", size: 3.5 },
+      { t: 1150, x: 0.7, h: 0.75, shell: "Palm", size: 3.5 },
+      { t: 1500, x: 0.25, h: 0.65, shell: "Ring", size: 3 },
+      { t: 1650, x: 0.75, h: 0.65, shell: "Ring", size: 3 },
+      { t: 2000, x: 0.5, h: 0.8, shell: "Vietnam Flag", size: 4 },
+      { t: 2500, x: 0.35, h: 0.7, shell: "Strobe", size: 2.5 },
+      { t: 2650, x: 0.65, h: 0.7, shell: "Strobe", size: 2.5 },
+      { t: 3000, x: 0.4, h: 0.6, shell: "Willow", size: 3 },
+      { t: 3150, x: 0.6, h: 0.6, shell: "Willow", size: 3 },
+    ]
+  },
+
+  // Pattern 2: Vòng tròn màu sắc với VN Flag
+  colorRings: {
+    name: "Color Rings",
+    duration: 12000,
+    timeline: [
+      { t: 0, x: 0.5, h: 0.7, shell: "Ring", size: 4 },
+      { t: 600, x: 0.3, h: 0.65, shell: "Crysanthemum", size: 3 },
+      { t: 750, x: 0.7, h: 0.65, shell: "Crysanthemum", size: 3 },
+      { t: 1200, x: 0.2, h: 0.6, shell: "Crossette", size: 2.5 },
+      { t: 1350, x: 0.8, h: 0.6, shell: "Crossette", size: 2.5 },
+      { t: 1800, x: 0.5, h: 0.75, shell: "Vietnam Flag", size: 4.5 },
+      { t: 2400, x: 0.25, h: 0.7, shell: "Palm", size: 3.5 },
+      { t: 2550, x: 0.75, h: 0.7, shell: "Palm", size: 3.5 },
+      { t: 3000, x: 0.35, h: 0.65, shell: "Ring", size: 3 },
+      { t: 3150, x: 0.65, h: 0.65, shell: "Ring", size: 3 },
+      { t: 3600, x: 0.5, h: 0.8, shell: "Crysanthemum", size: 4 },
+    ]
+  },
+
+  // Pattern 3: Lớp từ thấp đến cao - kim tự tháp
+  layeredFan: {
+    name: "Layered Fan",
+    duration: 8000,
+    timeline: [
+      // Lớp 1: Thấp, 5 viên
+      { t: 0, x: 0.2, h: 0.4, shell: "Crackle", size: 2 },
+      { t: 100, x: 0.35, h: 0.4, shell: "Crackle", size: 2 },
+      { t: 200, x: 0.5, h: 0.4, shell: "Crackle", size: 2 },
+      { t: 300, x: 0.65, h: 0.4, shell: "Crackle", size: 2 },
+      { t: 400, x: 0.8, h: 0.4, shell: "Crackle", size: 2 },
+      // Lớp 2: Trung bình, 4 viên
+      { t: 1000, x: 0.25, h: 0.6, shell: "Crossette", size: 2.5 },
+      { t: 1100, x: 0.42, h: 0.6, shell: "Crossette", size: 2.5 },
+      { t: 1200, x: 0.58, h: 0.6, shell: "Crossette", size: 2.5 },
+      { t: 1300, x: 0.75, h: 0.6, shell: "Crossette", size: 2.5 },
+      // Lớp 3: Cao, 3 viên + VN Flag
+      { t: 2000, x: 0.3, h: 0.75, shell: "Palm", size: 3.5 },
+      { t: 2100, x: 0.5, h: 0.8, shell: "Vietnam Flag", size: 4.5 },
+      { t: 2200, x: 0.7, h: 0.75, shell: "Palm", size: 3.5 },
+      // Lớp 4: Đỉnh cao
+      { t: 3000, x: 0.5, h: 0.85, shell: "Crysanthemum", size: 5 },
+    ]
+  },
+
+  // Pattern 4: Finale dày đặc
+  grandFinale: {
+    name: "Grand Finale",
+    duration: 7000,
+    timeline: [
+      // Mở màn
+      { t: 0, x: 0.2, h: 0.7, shell: "Crysanthemum", size: 3.5 },
+      { t: 0, x: 0.5, h: 0.75, shell: "Vietnam Flag", size: 4.5 },
+      { t: 0, x: 0.8, h: 0.7, shell: "Crysanthemum", size: 3.5 },
+      // Sóng 1
+      { t: 400, x: 0.3, h: 0.65, shell: "Crossette", size: 3 },
+      { t: 400, x: 0.7, h: 0.65, shell: "Crossette", size: 3 },
+      { t: 500, x: 0.15, h: 0.6, shell: "Crackle", size: 2.5 },
+      { t: 500, x: 0.85, h: 0.6, shell: "Crackle", size: 2.5 },
+      // Sóng 2
+      { t: 1000, x: 0.25, h: 0.75, shell: "Palm", size: 3.5 },
+      { t: 1000, x: 0.5, h: 0.8, shell: "Ring", size: 4 },
+      { t: 1000, x: 0.75, h: 0.75, shell: "Palm", size: 3.5 },
+      { t: 1200, x: 0.35, h: 0.7, shell: "Strobe", size: 3 },
+      { t: 1200, x: 0.65, h: 0.7, shell: "Strobe", size: 3 },
+      // VN Flag chính giữa
+      { t: 1600, x: 0.5, h: 0.85, shell: "Vietnam Flag", size: 5 },
+      // Bùng nổ cuối
+      { t: 2000, x: 0.2, h: 0.7, shell: "Crysanthemum", size: 3.5 },
+      { t: 2000, x: 0.4, h: 0.7, shell: "Crossette", size: 3 },
+      { t: 2000, x: 0.6, h: 0.7, shell: "Crossette", size: 3 },
+      { t: 2000, x: 0.8, h: 0.7, shell: "Crysanthemum", size: 3.5 },
+      { t: 2200, x: 0.3, h: 0.75, shell: "Ring", size: 3.5 },
+      { t: 2200, x: 0.7, h: 0.75, shell: "Ring", size: 3.5 },
+      { t: 2400, x: 0.5, h: 0.8, shell: "Vietnam Flag", size: 4.5 },
+    ]
+  },
+
+  // Pattern 5: Lễ hội Việt Nam - nhiều VN Flag
+  vietnamCelebration: {
+    name: "Vietnam Celebration",
+    duration: 10000,
+    timeline: [
+      { t: 0, x: 0.5, h: 0.75, shell: "Vietnam Flag", size: 4.5 },
+      { t: 800, x: 0.3, h: 0.7, shell: "Crysanthemum", size: 3 },
+      { t: 950, x: 0.7, h: 0.7, shell: "Crysanthemum", size: 3 },
+      { t: 1600, x: 0.5, h: 0.8, shell: "Vietnam Flag", size: 5 },
+      { t: 2400, x: 0.2, h: 0.65, shell: "Palm", size: 3 },
+      { t: 2550, x: 0.8, h: 0.65, shell: "Palm", size: 3 },
+      { t: 3200, x: 0.3, h: 0.75, shell: "Vietnam Flag", size: 4 },
+      { t: 3600, x: 0.7, h: 0.8, shell: "Vietnam Flag", size: 4 },
+      { t: 4200, x: 0.5, h: 0.7, shell: "Ring", size: 4 },
+      { t: 4800, x: 0.25, h: 0.7, shell: "Crossette", size: 3 },
+      { t: 4950, x: 0.75, h: 0.7, shell: "Crossette", size: 3 },
+      { t: 5600, x: 0.5, h: 0.85, shell: "Vietnam Flag", size: 5.5 },
+    ]
+  },
+
+  // Pattern 6: Wave - sóng liên tiếp
+  wave: {
+    name: "Wave",
+    duration: 9000,
+    timeline: [
+      { t: 0, x: 0.1, h: 0.6, shell: "Crysanthemum", size: 2.5 },
+      { t: 200, x: 0.2, h: 0.65, shell: "Crysanthemum", size: 2.5 },
+      { t: 400, x: 0.3, h: 0.7, shell: "Crysanthemum", size: 2.5 },
+      { t: 600, x: 0.4, h: 0.73, shell: "Crysanthemum", size: 2.5 },
+      { t: 800, x: 0.5, h: 0.75, shell: "Vietnam Flag", size: 4 },
+      { t: 1000, x: 0.6, h: 0.73, shell: "Crysanthemum", size: 2.5 },
+      { t: 1200, x: 0.7, h: 0.7, shell: "Crysanthemum", size: 2.5 },
+      { t: 1400, x: 0.8, h: 0.65, shell: "Crysanthemum", size: 2.5 },
+      { t: 1600, x: 0.9, h: 0.6, shell: "Crysanthemum", size: 2.5 },
+      // Sóng ngược
+      { t: 2400, x: 0.9, h: 0.6, shell: "Palm", size: 3 },
+      { t: 2600, x: 0.8, h: 0.65, shell: "Palm", size: 3 },
+      { t: 2800, x: 0.7, h: 0.7, shell: "Palm", size: 3 },
+      { t: 3000, x: 0.6, h: 0.73, shell: "Palm", size: 3 },
+      { t: 3200, x: 0.5, h: 0.75, shell: "Vietnam Flag", size: 4.5 },
+      { t: 3400, x: 0.4, h: 0.73, shell: "Palm", size: 3 },
+      { t: 3600, x: 0.3, h: 0.7, shell: "Palm", size: 3 },
+      { t: 3800, x: 0.2, h: 0.65, shell: "Palm", size: 3 },
+      { t: 4000, x: 0.1, h: 0.6, shell: "Palm", size: 3 },
+    ]
+  }
+};
+
+const showPatternNames = Object.keys(showPatterns);
+let currentShowPattern = null;
+let showStartTime = 0;
+let nextShowEventIndex = 0;
+
+// Hàm thực thi show pattern
+function seqShowPattern() {
+  // Chọn show ngẫu nhiên nếu chưa có
+  if (!currentShowPattern) {
+    const randomShow = showPatternNames[Math.floor(Math.random() * showPatternNames.length)];
+    currentShowPattern = showPatterns[randomShow];
+    showStartTime = Date.now();
+    nextShowEventIndex = 0;
+    console.log(`🎆 Bắt đầu màn: ${currentShowPattern.name}`);
+  }
+
+  const elapsed = Date.now() - showStartTime;
+  const timeline = currentShowPattern.timeline;
+
+  // Bắn các pháo theo timeline
+  while (nextShowEventIndex < timeline.length && elapsed >= timeline[nextShowEventIndex].t) {
+    const event = timeline[nextShowEventIndex];
+    const size = getRandomShellSize();
+    
+    // Ghi đè vị trí và chiều cao từ timeline
+    size.x = event.x;
+    size.height = event.h;
+    size.size = event.size || size.size;
+
+    // Chọn loại pháo
+    let shellType;
+    if (event.shell === "Vietnam Flag") {
+      shellType = vietnamFlagShell;
+    } else if (shellTypes[event.shell]) {
+      shellType = shellTypes[event.shell];
+    } else {
+      shellType = randomShell;
+    }
+
+    const shell = new Shell(shellType(size.size));
+    shell.launch(size.x, size.height);
+    
+    nextShowEventIndex++;
+  }
+
+  // Kết thúc show
+  if (elapsed >= currentShowPattern.duration) {
+    console.log(`✅ Kết thúc màn: ${currentShowPattern.name}`);
+    currentShowPattern = null;
+    nextShowEventIndex = 0;
+    // Trả về thời gian chờ trước show tiếp theo
+    return 3000;
+  }
+
+  // Tiếp tục kiểm tra timeline
+  return 50;
+}
+seqShowPattern.isShow = true;
+
 const sequences = [
   seqRandomShell,
   seqTwoRandom,
   seqTriple,
   seqPyramid,
   seqSmallBarrage,
+  seqShowPattern, // Thêm show pattern vào sequences
 ];
 
 let isFirstSeq = true;
@@ -1254,20 +1463,25 @@ function startSequence() {
 
   const rand = Math.random();
 
+  // Tăng tỷ lệ xuất hiện show patterns (25% cơ hội)
+  if (rand < 0.25 && !IS_HEADER) {
+    return seqShowPattern();
+  }
+
   if (
-    rand < 0.08 &&
+    rand < 0.33 &&
     Date.now() - seqSmallBarrage.lastCalled > seqSmallBarrage.cooldown
   ) {
     return seqSmallBarrage();
   }
 
-  if (rand < 0.1) {
+  if (rand < 0.4) {
     return seqPyramid();
   }
 
-  if (rand < 0.6 && !IS_HEADER) {
+  if (rand < 0.7 && !IS_HEADER) {
     return seqRandomShell();
-  } else if (rand < 0.8) {
+  } else if (rand < 0.85) {
     return seqTwoRandom();
   } else if (rand < 1) {
     return seqTriple();
